@@ -36,11 +36,10 @@ def extract_video_id(url_or_id: str) -> str:
 
 transcript_cache = {}
 
-def fetch_transcript(video_id: str, language: str = "en") -> str:
+def fetch_transcript(video_id: str, language: str = "en") -> list:
     """
     Fetch transcript from a YouTube video using its ID.
-    Uses cache to avoid repeated API calls for the same video.
-    Returns the transcript as a single string.
+    Returns a list of dicts: [{"text": ..., "start": ...}, ...]
     """
     cache_key = f"{video_id}:{language}"
     if cache_key in transcript_cache:
@@ -48,13 +47,13 @@ def fetch_transcript(video_id: str, language: str = "en") -> str:
     try:
         ytt_api = YouTubeTranscriptApi()
         transcript_data = ytt_api.fetch(video_id, languages=[language])
-        transcript = " ".join([snippet.text for snippet in transcript_data])
+        transcript = [{"text": snippet.text, "start": snippet.start} for snippet in transcript_data]
         transcript_cache[cache_key] = transcript
         return transcript
     except TranscriptsDisabled:
         print("No captions available for this video.")
-        transcript_cache[cache_key] = ""
-        return ""
+        transcript_cache[cache_key] = []
+        return []
 
 def detect_language(text: str) -> str:
     """
@@ -88,16 +87,27 @@ def translate_to_english(text: str, src_lang: str) -> str:
 
 
 
-def split_text(text: str, chunk_size: int = 600, chunk_overlap: int = 80):
+def split_text(transcript_segments, chunk_size: int = 600, chunk_overlap: int = 80):
     """
-    Split text into smaller chunks for embedding.
-    Returns a list of chunk objects.
+    Split transcript segments into chunks, preserving timestamps.
+    Returns a list of chunk dicts: [{"text": ..., "start": ...}]
     """
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-    )
-    chunks = splitter.create_documents([text])
+    chunks = []
+    current_chunk = ""
+    current_start = None
+    for seg in transcript_segments:
+        if current_start is None:
+            current_start = seg["start"]
+        if len(current_chunk) + len(seg["text"]) > chunk_size:
+            chunks.append({"text": current_chunk.strip(), "start": current_start})
+            # Overlap logic
+            overlap_text = current_chunk[-chunk_overlap:] if chunk_overlap > 0 else ""
+            current_chunk = overlap_text + seg["text"]
+            current_start = seg["start"]
+        else:
+            current_chunk += " " + seg["text"]
+    if current_chunk.strip():
+        chunks.append({"text": current_chunk.strip(), "start": current_start})
     return chunks
 
 
@@ -109,13 +119,17 @@ def split_text(text: str, chunk_size: int = 600, chunk_overlap: int = 80):
 
 
 
+from langchain_core.documents import Document
+
 def create_vector_store(chunks, embedding_model: str = "nomic-embed-text:v1.5"):
     """
     Create a FAISS vector store from text chunks using Ollama embeddings.
+    Each chunk is converted to a Document with timestamp metadata.
     Returns the vector store object.
     """
     embedding = OllamaEmbeddings(model=embedding_model)
-    vector_store = FAISS.from_documents(documents=chunks, embedding=embedding)
+    docs = [Document(page_content=chunk["text"], metadata={"start": chunk["start"]}) for chunk in chunks]
+    vector_store = FAISS.from_documents(documents=docs, embedding=embedding)
     return vector_store
 
 def get_retriever(vector_store, k: int = 5):
@@ -128,9 +142,37 @@ def get_retriever(vector_store, k: int = 5):
 
 def format_docs(retrieved_docs):
     """
-    Combine the text from multiple retrieved documents into a single string to be given inside prompt as context.
+    Combine the text from multiple retrieved documents into a single string, including start-end timestamps in HH:MM:SS format.
+    If the estimated end time equals the start time, only show the start time.
+    The end time is estimated by adding a duration based on chunk length, but capped at the last transcript segment's start time.
     """
-    return "\n\n".join(doc.page_content for doc in retrieved_docs)
+    def fmt_ts(ts):
+        if ts is None:
+            return "??:??:??"
+        ts = int(ts)
+        h = ts // 3600
+        m = (ts % 3600) // 60
+        s = ts % 60
+        return f"{h:02d}:{m:02d}:{s:02d}"
+    # Find the maximum start time (last transcript segment)
+    max_start = max([doc.metadata.get("start", 0) for doc in retrieved_docs if hasattr(doc, "metadata")], default=0)
+    formatted = []
+    for doc in retrieved_docs:
+        start = doc.metadata.get("start") if hasattr(doc, "metadata") else None
+        est_duration = max(5, len(doc.page_content) // 10)
+        end = start + est_duration if start is not None else None
+        # Cap end time at last transcript segment
+        if end is not None and end > max_start:
+            end = max_start
+        # If end == start, only show start time
+        if start is not None and end is not None and int(start) == int(end):
+            ts_range = f"[Timestamp: {fmt_ts(start)}]"
+        elif start is not None and end is not None:
+            ts_range = f"[Timestamp: {fmt_ts(start)} - {fmt_ts(end)}]"
+        else:
+            ts_range = ""
+        formatted.append(f"{ts_range} {doc.page_content}")
+    return "\n\n".join(formatted)
 
 
 
@@ -142,13 +184,15 @@ def format_docs(retrieved_docs):
 
 def build_prompt():
     """
-    Create a prompt template for the language model.
+    Create a prompt template for the language model, instructing it to cite timestamps for each point and provide a summary of all source timestamps at the end.
     """
     return PromptTemplate(
         input_variables=["context", "question"],
         template=(
             "You are a helpful assistant that helps people find information.\n"
             "Use the following pieces of context to answer the question at the end.\n"
+            "For each point in your answer, cite the source timestamp from the context, mentioning it before the point.\n"
+            "At the end of your answer, provide a summary list of all source timestamps used. Give each of them a heading based on the context to what the timestamps refer to\n"
             "If you don't know the answer, just say that you don't know, don't try to make up an answer.\n"
             "{context}\n"
             "Question: {question}"
