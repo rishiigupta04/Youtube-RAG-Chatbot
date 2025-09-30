@@ -1,0 +1,14 @@
+streamlit
+langchain
+langchain-core
+langchain-community
+langchain-ollama
+youtube-transcript-api
+deep-translator
+langdetect
+transformers
+huggingface-hub
+openai
+python-dotenv
+scikit-learn
+numpy
