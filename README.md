@@ -1,11 +1,11 @@
 # YouTube RAG Chatbot: AI-Powered Video Q&A Platform 🚀
 
-## Overview
+## 📝 Overview
 Unlock the knowledge in any YouTube video with our state-of-the-art Retrieval-Augmented Generation (RAG) chatbot. Powered by advanced LLMs and semantic search, this solution transforms video transcripts into an interactive, timestamp-cited Q&A experience for your users.
 
 ---
 
-## ✨ Key Features
+## ⭐ Key Features
 
 - **Instant Answers from Any YouTube Video**
   - Users ask questions about a video; the chatbot finds and cites relevant moments with precise timestamps.
@@ -22,7 +22,7 @@ Unlock the knowledge in any YouTube video with our state-of-the-art Retrieval-Au
 
 ---
 
-## How It Works
+## ⚙️ How It Works
 1. **Transcript Extraction**: Fetches and translates YouTube video transcripts.
 2. **Chunking & Embedding**: Splits transcripts into context-preserving chunks, embeds them for semantic search.
 3. **Retrieval & Prompting**: Finds the most relevant transcript segments for any user question.
@@ -30,7 +30,7 @@ Unlock the knowledge in any YouTube video with our state-of-the-art Retrieval-Au
 
 ---
 
-## Use Cases
+## 🎯 Use Cases
 - **EdTech**: Let students ask questions about lectures and get timestamped answers.
 - **Market Research**: Extract insights from interviews, podcasts, or webinars.
 - **Content Discovery**: Help users find key moments in long-form videos instantly.
@@ -38,14 +38,14 @@ Unlock the knowledge in any YouTube video with our state-of-the-art Retrieval-Au
 
 ---
 
-## Why Choose Us?
+## 💡 Why Choose Us?
 - **Accuracy**: Answers are always grounded in the source video, with verifiable timestamps.
 - **Speed**: Real-time Q&A, even for long videos.
 - **Flexibility**: Integrate with your stack, customize models, and scale as you grow.
 
 ---
 
-## Models & Infrastructure
+## 🏗️ Models & Infrastructure
 
 - **Large Language Models (LLMs):**
   - Supports open-source and commercial LLMs for answer generation, including models from Hugging Face and integration with cloud APIs.
@@ -60,9 +60,9 @@ Unlock the knowledge in any YouTube video with our state-of-the-art Retrieval-Au
 
 ---
 
-## Get Started
+## 🚦 Get Started
 
-### Setup Steps
+### 🛠️ Setup Steps
 1. **Clone the Repository**
    - Open your terminal and run:
      ```cmd
@@ -96,7 +96,7 @@ Unlock the knowledge in any YouTube video with our state-of-the-art Retrieval-Au
 6. **Run the Application**
    - Ensure Ollama is running in the background.
    - ```cmd
-     python rag_using_langchain.py
+     streamlit run streamlit_app.py 
      ```
 7. **Try a Demo**
    - Follow the prompts to enter a YouTube video link and your question.
