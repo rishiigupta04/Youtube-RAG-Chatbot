@@ -3,6 +3,9 @@
 ## 📝 Overview
 Unlock the knowledge in any YouTube video with our state-of-the-art Retrieval-Augmented Generation (RAG) chatbot. Powered by advanced LLMs and semantic search, this solution transforms video transcripts into an interactive, timestamp-cited Q&A experience for your users.
 
+
+## Live Demo: 
+https://www.linkedin.com/feed/update/urn:li:activity:7385567765694345217/
 ---
 
 ## ⭐ Key Features
