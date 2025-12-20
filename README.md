@@ -41,11 +41,6 @@ https://www.linkedin.com/feed/update/urn:li:activity:7385567765694345217/
 
 ---
 
-## 💡 Why Choose Us?
-- **Accuracy**: Answers are always grounded in the source video, with verifiable timestamps.
-- **Speed**: Real-time Q&A, even for long videos.
-- **Flexibility**: Integrate with your stack, customize models, and scale as you grow.
-
 ---
 
 ## 🏗️ Models & Infrastructure
